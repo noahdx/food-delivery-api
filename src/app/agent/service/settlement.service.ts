@@ -10,6 +10,7 @@ import { RestaurantBalanceEntity } from '../../finance/entity/restaurant-balance
 import { TransactionRepository } from '../../payment/repository/transaction.repository';
 import { PaymentMethodType, TransactionStatus, TransactionType } from '../../payment/enums';
 import { RestaurantRepository } from '../../restaurant/repository/restaurant.repository';
+import { BranchRepository } from '../../branch/repository/branch.repository';
 
 @injectable()
 export class SettlementService {
@@ -24,18 +25,25 @@ export class SettlementService {
     private readonly transactionRepository: TransactionRepository,
     @inject(tokens.RestaurantRepository)
     private readonly restaurantRepository: RestaurantRepository,
+    @inject(tokens.BranchRepository)
+    private readonly branchRepository: BranchRepository,
   ) {}
 
   settleOrder = async (
     order: OrderEntity,
     trx: Knex,
   ): Promise<{ balance: RestaurantBalanceEntity; earning?: AgentEarningEntity }> => {
-    // 1. Restaurant balance update: subtotal - commission
-    const netRestaurantAmount = order.subtotal - order.commission;
+    // 1. Calculate commission based on branch contract (bps)
+    const branch = await this.branchRepository.findById(order.branchId);
+    const commissionRate = branch?.commission ?? 0;
+    const commission = Math.floor((order.subtotal * commissionRate) / 10000);
+
+    // 2. Restaurant balance update: subtotal - commission
+    const netRestaurantAmount = order.subtotal - commission;
     const balance = await this.balanceRepository.upsertIncrement(order.restaurantId, netRestaurantAmount, trx);
 
-    // 2. Insert commission transaction if commission > 0
-    if (order.commission > 0) {
+    // 3. Insert commission transaction if commission > 0
+    if (commission > 0) {
       const restaurant = await this.restaurantRepository.findById(order.restaurantId);
       await this.transactionRepository.create(
         {
@@ -43,7 +51,7 @@ export class SettlementService {
           transactionType: TransactionType.COMMISSION,
           method: PaymentMethodType.SYSTEM,
           status: TransactionStatus.SUCCEEDED,
-          amount: order.commission,
+          amount: commission,
           currency: 'EGP',
           srcAccId: restaurant?.ownerId ?? null,
           dstAccId: null,

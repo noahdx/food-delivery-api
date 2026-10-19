@@ -29,8 +29,10 @@ import {
   OutOfStockError,
   RestaurantDoesNotMatchError,
 } from '../errors';
+import { toMinor } from '../../../pkg/utils/money';
 
-const DEFAULT_DELIVERY_FEE = 2000; // 20.00 minor units (cents/piastres)
+const DELIVERY_FEE_MINOR = 1000; // 10.00 minor paid to the delivery agent.
+const SERVICE_FEE_MINOR = 1000; // 10.00 minor  paid to the platform.
 
 @injectable()
 export class OrderService {
@@ -100,7 +102,7 @@ export class OrderService {
         throw OutOfStockError;
       }
 
-      const unitPrice = Number(detail.price);
+      const unitPrice = toMinor(Number(detail.price));
       const lineTotal = unitPrice * qty;
       subtotal += lineTotal;
 
@@ -115,10 +117,9 @@ export class OrderService {
       });
     }
 
-    const deliveryFee = DEFAULT_DELIVERY_FEE;
-    const total = subtotal + deliveryFee;
-    const commissionRate = branch.commission ?? 0;
-    const commission = Math.floor((subtotal * commissionRate) / 10000);
+    const deliveryFee = DELIVERY_FEE_MINOR;
+    const serviceFee = SERVICE_FEE_MINOR;
+    const total = subtotal + deliveryFee + serviceFee;
     const publicId = randomUUID();
     const initialStatus = data.paymentMethod === PaymentMethod.ONLINE ? OrderStatus.PENDING_PAYMENT : OrderStatus.PLACED;
 
@@ -148,9 +149,9 @@ export class OrderService {
           deliveryAddressTextSnapshot: addressText,
           status: initialStatus,
           subtotal,
-          deliveryFee,
+          deliveryFee: DELIVERY_FEE_MINOR,
+          serviceFee: SERVICE_FEE_MINOR,
           total,
-          commission,
           paymentMethod: data.paymentMethod,
         },
         trx,

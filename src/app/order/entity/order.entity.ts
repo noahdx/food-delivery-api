@@ -13,8 +13,8 @@ export class OrderEntity {
   status: OrderStatus;
   subtotal: number;
   deliveryFee: number;
+  serviceFee: number;
   total: number;
-  commission: number;
   paymentMethod: PaymentMethod;
   agentId?: number | null;
   createdAt: Date;
@@ -40,8 +40,8 @@ export class OrderEntity {
     this.status = data.status!;
     this.subtotal = data.subtotal!;
     this.deliveryFee = data.deliveryFee!;
+    this.serviceFee = data.serviceFee!;
     this.total = data.total!;
-    this.commission = data.commission ?? 0;
     this.paymentMethod = data.paymentMethod!;
     this.agentId = data.agentId ?? null;
     this.createdAt = data.createdAt ?? new Date();

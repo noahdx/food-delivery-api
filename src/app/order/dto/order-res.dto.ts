@@ -19,8 +19,8 @@ export class OrderResponseDTO {
       money: {
         subtotal: order.subtotal,
         deliveryFee: order.deliveryFee,
+        serviceFee: order.serviceFee,
         total: order.total,
-        commission: order.commission,
       },
       paymentMethod: order.paymentMethod,
       agentId: order.agentId,

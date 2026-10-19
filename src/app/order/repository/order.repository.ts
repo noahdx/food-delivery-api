@@ -46,8 +46,8 @@ export class OrderRepository {
     'status',
     'subtotal',
     'delivery_fee',
+    'service_fee',
     'total',
-    'commission',
     'payment_method',
     'agent_id',
     'created_at',
@@ -75,8 +75,8 @@ export class OrderRepository {
         status: data.status,
         subtotal: data.subtotal,
         delivery_fee: data.deliveryFee,
+        service_fee: data.serviceFee,
         total: data.total,
-        commission: data.commission ?? 0,
         payment_method: data.paymentMethod,
         agent_id: data.agentId ?? null,
         created_at: data.createdAt ?? new Date(),
@@ -123,9 +123,6 @@ export class OrderRepository {
     return this.toEntity(row);
   }
 
-  async updateOrderCommission(publicId: string, commission: number, conn: Knex = db): Promise<void> {
-    await conn('orders').where({ public_id: publicId }).update({ commission, updated_at: new Date() });
-  }
 
   async claimReadyOrderForAgent(publicId: string, agentId: number, conn: Knex = db): Promise<OrderEntity | undefined> {
     const [row] = await conn('orders')
@@ -284,8 +281,8 @@ export class OrderRepository {
       status: row.status as OrderStatus,
       subtotal: Number(row.subtotal),
       deliveryFee: Number(row.delivery_fee),
+      serviceFee: Number(row.service_fee),
       total: Number(row.total),
-      commission: Number(row.commission ?? 0),
       paymentMethod: row.payment_method,
       agentId: row.agent_id ? Number(row.agent_id) : null,
       createdAt: row.created_at,
